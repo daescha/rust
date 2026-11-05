@@ -3475,3 +3475,17 @@ fn test_media_dirs_field_hookup_matches() {
     assert_eq!(dirs.pictures(), Some(pictures.as_ref()));
     assert_eq!(dirs.videos(), Some(videos.as_ref()));
 }
+
+#[test]
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn custom_flags_keep_o_path() {
+    use crate::os::unix::fs::OpenOptionsExt;
+
+    let tmpdir = tmpdir();
+    let path = tmpdir.join("o_path");
+    check!(File::create(&path)).write_all(b"x").unwrap();
+    let mut file = check!(OpenOptions::new().read(true).custom_flags(libc::O_PATH).open(&path));
+    // An O_PATH descriptor cannot be read.
+    let err = file.read(&mut [0; 1]).unwrap_err();
+    assert_eq!(err.raw_os_error(), Some(libc::EBADF), "{err:?}");
+}

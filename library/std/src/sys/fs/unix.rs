@@ -1237,7 +1237,8 @@ impl File {
         let flags = libc::O_CLOEXEC
             | opts.get_access_mode()?
             | opts.get_creation_mode()?
-            | (opts.custom_flags as c_int & !libc::O_ACCMODE);
+            // musl's O_ACCMODE includes O_SEARCH (== O_PATH), so mask only the access-mode values.
+            | (opts.custom_flags as c_int & !(libc::O_RDONLY | libc::O_WRONLY | libc::O_RDWR));
         // The third argument of `open64` is documented to have type `mode_t`. On
         // some platforms (like macOS, where `open64` is actually `open`), `mode_t` is `u16`.
         // However, since this is a variadic function, C integer promotion rules mean that on
